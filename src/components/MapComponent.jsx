@@ -1,7 +1,8 @@
 import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl, Circle, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { getSafetyData } from '../services/dataService';
 
 // Fix for default marker icons in Leaflet when using build tools
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -16,7 +17,7 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// Custom styling for specific markers if needed
+// Custom styling for specific markers
 const originIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -36,20 +37,46 @@ const destIcon = new L.Icon({
 });
 
 const MapComponent = () => {
-  // Center of the map (roughly between ICESI and Jamundí)
+  const [safetyData, setSafetyData] = React.useState({ dangerZones: [], safeRoute: [] });
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await getSafetyData();
+        setSafetyData(data);
+      } catch (error) {
+        console.error("Error fetching safety data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Center of the map
   const center = [3.3015, -76.5356];
   
-  // Coordinates provided
+  // Coordinates provided for markers
   const icesiCoords = [3.3419, -76.53];
   const homeCoords = [3.2612, -76.5413];
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full relative">
+      {loading && (
+        <div className="absolute inset-0 z-[2000] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center gap-3 shadow-2xl">
+            <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm font-medium text-slate-200">Loading safety intelligence...</span>
+          </div>
+        </div>
+      )}
+
       <MapContainer 
         center={center} 
-        zoom={13} 
+        zoom={12} 
         scrollWheelZoom={true}
-        zoomControl={false} // We'll add it in a specific position
+        zoomControl={false}
         className="h-full w-full"
       >
         <TileLayer
@@ -59,9 +86,39 @@ const MapComponent = () => {
         
         <ZoomControl position="bottomright" />
 
+        {/* Safe Route Polyline */}
+        {safetyData.safeRoute.length > 0 && (
+          <Polyline 
+            positions={safetyData.safeRoute}
+            pathOptions={{ color: '#3b82f6', weight: 4, opacity: 0.6, dashArray: '10, 10' }}
+          />
+        )}
+
+        {/* Danger Zones */}
+        {safetyData.dangerZones.map((zone) => (
+          <Circle
+            key={zone.id}
+            center={[zone.lat, zone.lng]}
+            radius={zone.radius}
+            pathOptions={{ 
+              color: '#ef4444', 
+              fillColor: '#ef4444', 
+              fillOpacity: 0.2,
+              weight: 1
+            }}
+          >
+            <Popup>
+              <div className="text-xs font-sans">
+                <span className="font-bold text-red-600 uppercase">Riesgo Detectado</span>
+                <p className="mt-1 text-slate-700">{zone.label}</p>
+              </div>
+            </Popup>
+          </Circle>
+        ))}
+
         {/* Origin Marker */}
         <Marker position={icesiCoords} icon={originIcon}>
-          <Popup className="custom-popup">
+          <Popup>
             <div className="font-sans">
               <h3 className="font-bold text-slate-900 leading-tight">ICESI (Origen)</h3>
               <p className="text-xs text-slate-600 mt-1">Starting point for safety analysis.</p>
