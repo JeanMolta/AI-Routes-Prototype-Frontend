@@ -117,6 +117,7 @@ const MapComponent = ({ tripState, analysisMessage, selectedOrigin, selectedDest
             {safetyData.safeRoute.length > 0 && (
               <Polyline 
                 positions={safetyData.safeRoute}
+                smoothFactor={1}
                 pathOptions={{ color: '#10b981', weight: 5, opacity: 0.9 }}
               />
             )}
