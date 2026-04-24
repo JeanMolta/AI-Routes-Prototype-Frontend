@@ -36,7 +36,7 @@ const destIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-const MapComponent = () => {
+const MapComponent = ({ tripState, analysisMessage }) => {
   const [safetyData, setSafetyData] = React.useState({ dangerZones: [], safeRoute: [] });
   const [loading, setLoading] = React.useState(true);
 
@@ -63,11 +63,32 @@ const MapComponent = () => {
 
   return (
     <div className="w-full h-full relative">
+      {/* Initial Data Loading */}
       {loading && (
-        <div className="absolute inset-0 z-[2000] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
-          <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center gap-3 shadow-2xl">
-            <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm font-medium text-slate-200">Loading safety intelligence...</span>
+        <div className="absolute inset-0 z-[2000] bg-slate-900 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm font-medium text-slate-400">Initializing Intelligence Layer...</span>
+          </div>
+        </div>
+      )}
+
+      {/* AI Analysis Overlay */}
+      {tripState === 'calculating' && (
+        <div className="absolute inset-0 z-[2000] bg-slate-900/60 backdrop-blur-md flex items-center justify-center">
+          <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 max-w-sm w-full shadow-2xl flex flex-col items-center text-center space-y-6">
+            <div className="relative">
+              <div className="w-20 h-20 border-4 border-blue-500/20 rounded-full" />
+              <div className="absolute inset-0 w-20 h-20 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <Shield className="absolute inset-0 m-auto w-8 h-8 text-blue-500" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white mb-2">Analyzing Security</h3>
+              <p className="text-slate-400 text-sm h-10">{analysisMessage}</p>
+            </div>
+            <div className="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+              <div className="bg-blue-500 h-full animate-[progress_3s_ease-in-out_infinite]" style={{ width: '60%' }} />
+            </div>
           </div>
         </div>
       )}
@@ -86,11 +107,33 @@ const MapComponent = () => {
         
         <ZoomControl position="bottomright" />
 
-        {/* Safe Route Polyline */}
-        {safetyData.safeRoute.length > 0 && (
+        {/* Safe Route Polyline (Dashed Blue - Idle/Planning) */}
+        {tripState === 'idle' && safetyData.safeRoute.length > 0 && (
           <Polyline 
             positions={safetyData.safeRoute}
-            pathOptions={{ color: '#3b82f6', weight: 4, opacity: 0.6, dashArray: '10, 10' }}
+            pathOptions={{ color: '#3b82f6', weight: 2, opacity: 0.3, dashArray: '5, 10' }}
+          />
+        )}
+
+        {/* Active Secure Route (Emerald Green) */}
+        {(tripState === 'active' || tripState === 'arrived') && safetyData.safeRoute.length > 0 && (
+          <Polyline 
+            positions={safetyData.safeRoute}
+            pathOptions={{ color: '#10b981', weight: 5, opacity: 0.8 }}
+          />
+        )}
+
+        {/* Juan's Position Marker (Pulsing Circle) */}
+        {tripState === 'active' && (
+          <Circle
+            center={icesiCoords}
+            radius={80}
+            pathOptions={{ 
+              color: '#3b82f6', 
+              fillColor: '#3b82f6', 
+              fillOpacity: 0.6,
+              className: 'animate-pulse' 
+            }}
           />
         )}
 
@@ -103,7 +146,7 @@ const MapComponent = () => {
             pathOptions={{ 
               color: '#ef4444', 
               fillColor: '#ef4444', 
-              fillOpacity: 0.2,
+              fillOpacity: 0.15,
               weight: 1
             }}
           >
@@ -119,9 +162,9 @@ const MapComponent = () => {
         {/* Origin Marker */}
         <Marker position={icesiCoords} icon={originIcon}>
           <Popup>
-            <div className="font-sans">
-              <h3 className="font-bold text-slate-900 leading-tight">ICESI (Origen)</h3>
-              <p className="text-xs text-slate-600 mt-1">Starting point for safety analysis.</p>
+            <div className="font-sans text-slate-900">
+              <h3 className="font-bold">Universidad ICESI</h3>
+              <p className="text-[10px]">Punto de inicio seguro.</p>
             </div>
           </Popup>
         </Marker>
@@ -129,9 +172,9 @@ const MapComponent = () => {
         {/* Destination Marker */}
         <Marker position={homeCoords} icon={destIcon}>
           <Popup>
-            <div className="font-sans">
-              <h3 className="font-bold text-slate-900 leading-tight">Home (Destino)</h3>
-              <p className="text-xs text-slate-600 mt-1">Arrival: Alfaguara, Jamundí.</p>
+            <div className="font-sans text-slate-900">
+              <h3 className="font-bold">Alfaguara (Home)</h3>
+              <p className="text-[10px]">Destino final verificado.</p>
             </div>
           </Popup>
         </Marker>
