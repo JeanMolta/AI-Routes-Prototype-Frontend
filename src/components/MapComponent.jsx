@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, ZoomControl, Circle, Polyline }
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getSafetyData } from '../services/dataService';
+import { Shield } from 'lucide-react';
 
 // Fix for default marker icons in Leaflet when using build tools
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -36,7 +37,7 @@ const destIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-const MapComponent = ({ tripState, analysisMessage }) => {
+const MapComponent = ({ tripState, analysisMessage, selectedOrigin, selectedDest }) => {
   const [safetyData, setSafetyData] = React.useState({ dangerZones: [], safeRoute: [] });
   const [loading, setLoading] = React.useState(true);
 
@@ -63,9 +64,9 @@ const MapComponent = ({ tripState, analysisMessage }) => {
 
   return (
     <div className="w-full h-full relative">
-      {/* Initial Data Loading */}
+      {/* Initial Data Loading - Only for first initialization */}
       {loading && (
-        <div className="absolute inset-0 z-[2000] bg-slate-900 flex items-center justify-center">
+        <div className="absolute inset-0 z-[6000] bg-slate-900 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
             <span className="text-sm font-medium text-slate-400">Initializing Intelligence Layer...</span>
@@ -73,21 +74,23 @@ const MapComponent = ({ tripState, analysisMessage }) => {
         </div>
       )}
 
-      {/* AI Analysis Overlay */}
+      {/* AI Analysis Overlay - Active during 'calculating' state */}
       {tripState === 'calculating' && (
-        <div className="absolute inset-0 z-[2000] bg-slate-900/60 backdrop-blur-md flex items-center justify-center">
-          <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 max-w-sm w-full shadow-2xl flex flex-col items-center text-center space-y-6">
+        <div className="absolute inset-0 z-[5000] bg-slate-950/80 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-500">
+          <div className="bg-slate-900 border border-slate-700/50 p-10 rounded-[2.5rem] max-w-sm w-full shadow-[0_0_50px_-12px_rgba(59,130,246,0.3)] flex flex-col items-center text-center space-y-8">
             <div className="relative">
-              <div className="w-20 h-20 border-4 border-blue-500/20 rounded-full" />
-              <div className="absolute inset-0 w-20 h-20 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-              <Shield className="absolute inset-0 m-auto w-8 h-8 text-blue-500" />
+              <div className="w-24 h-24 border-4 border-blue-500/10 rounded-full" />
+              <div className="absolute inset-0 w-24 h-24 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <div className="absolute inset-0 m-auto w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center">
+                <Shield className="w-6 h-6 text-blue-500" />
+              </div>
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white mb-2">Analyzing Security</h3>
-              <p className="text-slate-400 text-sm h-10">{analysisMessage}</p>
+              <h3 className="text-xl font-black text-white mb-2 uppercase tracking-tight">AI Secure Sync</h3>
+              <p className="text-slate-400 text-sm font-medium h-10 px-4 leading-tight">{analysisMessage}</p>
             </div>
-            <div className="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-blue-500 h-full animate-[progress_3s_ease-in-out_infinite]" style={{ width: '60%' }} />
+            <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+              <div className="bg-blue-500 h-full animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.5)]" style={{ width: '70%' }} />
             </div>
           </div>
         </div>
@@ -107,20 +110,39 @@ const MapComponent = ({ tripState, analysisMessage }) => {
         
         <ZoomControl position="bottomright" />
 
-        {/* Safe Route Polyline (Dashed Blue - Idle/Planning) */}
-        {tripState === 'idle' && safetyData.safeRoute.length > 0 && (
-          <Polyline 
-            positions={safetyData.safeRoute}
-            pathOptions={{ color: '#3b82f6', weight: 2, opacity: 0.3, dashArray: '5, 10' }}
-          />
-        )}
+        {/* Happy Path Rendering: Zonas y Ruta Solo aparecen en estado activo/arrived */}
+        {(tripState === 'active' || tripState === 'arrived') && (
+          <>
+            {/* Active Secure Route (Emerald Green) */}
+            {safetyData.safeRoute.length > 0 && (
+              <Polyline 
+                positions={safetyData.safeRoute}
+                pathOptions={{ color: '#10b981', weight: 5, opacity: 0.9 }}
+              />
+            )}
 
-        {/* Active Secure Route (Emerald Green) */}
-        {(tripState === 'active' || tripState === 'arrived') && safetyData.safeRoute.length > 0 && (
-          <Polyline 
-            positions={safetyData.safeRoute}
-            pathOptions={{ color: '#10b981', weight: 5, opacity: 0.8 }}
-          />
+            {/* Danger Zones */}
+            {safetyData.dangerZones.map((zone) => (
+              <Circle
+                key={zone.id}
+                center={[zone.lat, zone.lng]}
+                radius={zone.radius}
+                pathOptions={{ 
+                  color: '#ef4444', 
+                  fillColor: '#ef4444', 
+                  fillOpacity: 0.15,
+                  weight: 1
+                }}
+              >
+                <Popup>
+                  <div className="text-xs font-sans">
+                    <span className="font-bold text-red-600 uppercase">Riesgo Detectado</span>
+                    <p className="mt-1 text-slate-700">{zone.label}</p>
+                  </div>
+                </Popup>
+              </Circle>
+            ))}
+          </>
         )}
 
         {/* Juan's Position Marker (Pulsing Circle) */}
@@ -137,47 +159,29 @@ const MapComponent = ({ tripState, analysisMessage }) => {
           />
         )}
 
-        {/* Danger Zones */}
-        {safetyData.dangerZones.map((zone) => (
-          <Circle
-            key={zone.id}
-            center={[zone.lat, zone.lng]}
-            radius={zone.radius}
-            pathOptions={{ 
-              color: '#ef4444', 
-              fillColor: '#ef4444', 
-              fillOpacity: 0.15,
-              weight: 1
-            }}
-          >
+        {/* Origin Marker - Only show if selected */}
+        {selectedOrigin && (
+          <Marker position={icesiCoords} icon={originIcon}>
             <Popup>
-              <div className="text-xs font-sans">
-                <span className="font-bold text-red-600 uppercase">Riesgo Detectado</span>
-                <p className="mt-1 text-slate-700">{zone.label}</p>
+              <div className="font-sans text-slate-900">
+                <h3 className="font-bold">Universidad ICESI</h3>
+                <p className="text-[10px]">Origen verificado.</p>
               </div>
             </Popup>
-          </Circle>
-        ))}
+          </Marker>
+        )}
 
-        {/* Origin Marker */}
-        <Marker position={icesiCoords} icon={originIcon}>
-          <Popup>
-            <div className="font-sans text-slate-900">
-              <h3 className="font-bold">Universidad ICESI</h3>
-              <p className="text-[10px]">Punto de inicio seguro.</p>
-            </div>
-          </Popup>
-        </Marker>
-
-        {/* Destination Marker */}
-        <Marker position={homeCoords} icon={destIcon}>
-          <Popup>
-            <div className="font-sans text-slate-900">
-              <h3 className="font-bold">Alfaguara (Home)</h3>
-              <p className="text-[10px]">Destino final verificado.</p>
-            </div>
-          </Popup>
-        </Marker>
+        {/* Destination Marker - Only show if selected */}
+        {selectedDest && (
+          <Marker position={homeCoords} icon={destIcon}>
+            <Popup>
+              <div className="font-sans text-slate-900">
+                <h3 className="font-bold">Alfaguara (Home)</h3>
+                <p className="text-[10px]">Destino final seguro.</p>
+              </div>
+            </Popup>
+          </Marker>
+        )}
       </MapContainer>
 
       {/* Floating Info Overlays */}
