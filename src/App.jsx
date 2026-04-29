@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import MapComponent from './components/MapComponent';
 import { Shield, Navigation, AlertTriangle, Settings, CheckCircle2, Search, MapPin, Loader2, X } from 'lucide-react';
+import { getOSRMRoute } from './services/dataService';
 
 function App() {
   const [tripState, setTripState] = useState('idle'); // 'idle', 'calculating', 'active', 'arrived'
   const [analysisMessage, setAnalysisMessage] = useState('');
+  const [routeCoords, setRouteCoords] = useState([]);
   
   // Search States
   const [originQuery, setOriginQuery] = useState('');
@@ -35,7 +37,7 @@ function App() {
     "Finalizing secure corridor..."
   ];
 
-  const handleStartAnalysis = () => {
+  const handleStartAnalysis = async () => {
     if (!selectedOrigin || !selectedDest) return;
     
     setTripState('calculating');
@@ -55,6 +57,12 @@ function App() {
       clearInterval(interval);
       setTripState('active');
     }, 4000);
+
+    // Fetch route from OSRM
+    const origin = { lat: 3.3419, lng: -76.5300 };
+    const dest = { lat: 3.2612, lng: -76.5413 };
+    const coords = await getOSRMRoute(origin, dest);
+    setRouteCoords(coords);
   };
 
   const handleFinishTrip = () => {
@@ -292,6 +300,7 @@ function App() {
           analysisMessage={analysisMessage} 
           selectedOrigin={selectedOrigin}
           selectedDest={selectedDest}
+          routeCoords={routeCoords}
         />
         
         {/* Active Trip Info Card */}

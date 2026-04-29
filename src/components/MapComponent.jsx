@@ -37,7 +37,7 @@ const destIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-const MapComponent = ({ tripState, analysisMessage, selectedOrigin, selectedDest }) => {
+const MapComponent = ({ tripState, analysisMessage, selectedOrigin, selectedDest, routeCoords }) => {
   const [safetyData, setSafetyData] = React.useState({ dangerZones: [], safeRoute: [] });
   const [loading, setLoading] = React.useState(true);
 
@@ -114,9 +114,9 @@ const MapComponent = ({ tripState, analysisMessage, selectedOrigin, selectedDest
         {(tripState === 'active' || tripState === 'arrived') && (
           <>
             {/* Active Secure Route (Emerald Green) */}
-            {safetyData.safeRoute.length > 0 && (
+            {routeCoords && routeCoords.length > 0 && (
               <Polyline 
-                positions={safetyData.safeRoute}
+                positions={routeCoords}
                 smoothFactor={1}
                 pathOptions={{ color: '#10b981', weight: 5, opacity: 0.9 }}
               />
