@@ -80,10 +80,13 @@ function App() {
   const canStartTrip = selectedOrigin === ORIGIN_TARGET && selectedDest === DEST_TARGET;
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-slate-900 text-white font-sans">
-      {/* Sidebar */}
-      <aside className="w-96 bg-slate-800 border-r border-slate-700 flex flex-col p-6 shadow-2xl z-30">
-        <div className="flex items-center gap-3 mb-8">
+    <div className="relative flex flex-col lg:flex-row h-screen w-full overflow-hidden bg-slate-900 text-white font-sans">
+      {/* Sidebar / Bottom Sheet */}
+      <aside className="fixed bottom-0 left-0 w-full lg:relative lg:w-96 lg:h-full bg-slate-800/95 lg:bg-slate-800 backdrop-blur-xl lg:backdrop-blur-none border-t lg:border-t-0 lg:border-r border-slate-700 flex flex-col p-6 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] lg:shadow-2xl z-40 transition-all duration-500 ease-in-out rounded-t-[2.5rem] lg:rounded-none h-[45vh] lg:h-full">
+        {/* Mobile Handle */}
+        <div className="lg:hidden w-12 h-1.5 bg-slate-600/40 rounded-full mx-auto mb-6 shrink-0" />
+
+        <div className="flex items-center gap-3 mb-8 shrink-0">
           <div className="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-500/20">
             <Shield className="w-6 h-6 text-white" />
           </div>
@@ -249,7 +252,7 @@ function App() {
           </div>
         </div>
 
-        <div className="mt-8 space-y-3">
+        <div className="mt-8 space-y-3 shrink-0">
           {tripState === 'idle' && (
             <button 
               disabled={!canStartTrip}
@@ -294,7 +297,7 @@ function App() {
       </aside>
 
       {/* Main Map Area */}
-      <main className="flex-1 relative bg-[#010a17]">
+      <main className="flex-1 relative bg-[#010a17] z-10 h-full">
         <MapComponent 
           tripState={tripState} 
           analysisMessage={analysisMessage} 
@@ -305,7 +308,7 @@ function App() {
         
         {/* Active Trip Info Card */}
         {tripState === 'active' && (
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-md px-4 animate-in slide-in-from-bottom-5 fade-in duration-700">
+          <div className="absolute bottom-[48vh] lg:bottom-10 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-md px-4 animate-in slide-in-from-bottom-5 fade-in duration-700">
             <div className="bg-slate-900/90 backdrop-blur-2xl border border-slate-700/50 p-5 rounded-[2rem] shadow-2xl flex items-center justify-between border-b-emerald-500/50 border-b-2">
               <div className="flex items-center gap-4">
                 <div className="bg-emerald-500/10 p-3 rounded-2xl border border-emerald-500/20">
